@@ -1,13 +1,23 @@
+// certs/certs.go
+
 package certs
 
-func GenerateCA() {
-	// 这里是生成CA证书的代码
+import (
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
+)
+
+func LoadCertificate(certPath, keyPath string) (tls.Certificate, error) {
+	return tls.LoadX509KeyPair(certPath, keyPath)
 }
 
-func GenerateServerCert() {
-	// 这里是生成伪造的服务器证书的代码
-}
-
-func LoadExternalCert(certPath, keyPath string) {
-	// 加载并使用第三方证书的代码
+func LoadCA(certPath string) (*x509.CertPool, error) {
+	caCert, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return nil, err
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	return caCertPool, nil
 }

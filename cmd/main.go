@@ -1,7 +1,11 @@
+// cmd/main.go
+
 package main
 
 import (
+	"crypto/tls"
 	"log"
+	"mitm-proxy/certs"
 	"mitm-proxy/pkg/auth"
 	"mitm-proxy/pkg/config"
 	"net/http"
@@ -17,9 +21,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 使用cfg.CACert和cfg.CAKey加载CA证书和私钥
-	// ...
+	certificate, err := certs.LoadCertificate(cfg.CACert, cfg.CAKey)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	http.HandleFunc("/", auth.BasicAuth(handleRequest, "yourUsername", "yourPassword", "Please enter your username and password"))
-	http.ListenAndServe(":8080", nil)
+	caCertPool, err := certs.LoadCA(cfg.CACert)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{certificate},
+		RootCAs:      caCertPool,
+	}
+
+	server := &http.Server{
+		Addr:      ":8080",
+		TLSConfig: tlsConfig,
+	}
+
+	http.HandleFunc("/", auth.BasicAuthMiddleware(handleRequest, "path/to/your/database.sqlite", "Please enter your username and password"))
+	log.Fatal(server.ListenAndServeTLS("", ""))
 }
